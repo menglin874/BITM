@@ -1,0 +1,37 @@
+def noise_gauss(image,mean=0.0,var=1):#creer un bruit gaussien
+    row,col= image.shape
+    sigma = var**0.5
+    gauss = rd.normal(mean,sigma,(row,col))#creer un matrice gaussienne aleatoire
+    gauss = gauss.reshape(row,col)
+    noisy = image + gauss
+    return noisy
+
+def noise_salt(image,prob = 0.004):# creer un bruit salt
+    row,col = image.shape
+    prob = 0.004
+    out = np.copy(image)
+    coords=rd.choice([0,1],p=[1-prob, prob],size=(row,col))#Génère un échantillon aléatoire à partir d'un vecteur [0,1],
+    #la probabilite de choisir 0 est "1-prob",la probabilite de choisir 1 est  "prob"
+    out[coords==1] = 255#si les donnees dans coords est 1,le niveau de gris = 255(on va voir les points blancs dans l'image)
+    return out
+
+def noise_pepper(image,p = 0.5,amount = 0.004):#creer un bruit pepper
+    row,col = image.shape
+    prob = 0.004
+    out = np.copy(image)
+    coords=rd.choice([0,1],p=[1-prob, prob],size=(row,col))
+    out[coords==1] = 0#si les donnees dans coords est 0,le niveau de gris = 0(on va voir les points noirs dans l'image)
+    return out
+    
+def noise_speckle(image):#creer un bruit speckle,c'est un bruit plus fort que bruit gaussien
+    row,col = image.shape
+    gauss = rd.randn(row,col)
+    gauss = gauss.reshape(row,col)        
+    noisy = image + image * gauss
+    return noisy
+
+def flou_gauss(image):#creer un flou gaussien
+    row,col = image.shape
+    kernel = np.array([[1,2,1],[2,4,2],[1,2,1]], np.float)/16.
+    flou = cv2.filter2D(img,-1,kernel)#Convoluez l'image à l'aide d'un noyau . Cette fonction applique un filtre linéaire arbitraire à l'image
+    return flou
