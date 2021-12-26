@@ -1,0 +1,157 @@
+import numpy as np 
+import math 
+import matplotlib.pyplot as plt 
+import scipy.optimize as opt 
+from scipy.stats import bernoulli 
+from fractions import Fraction
+
+#Generation de graphes#
+
+#the adjacency matrix of a path of length n#
+def chemin(n): 
+    A=np.zeros([n,n]) 
+    for i in range(0,n-1): 
+        A[i,i+1]=1 
+        A[i+1,i]=1 
+    return A
+    
+#the adjacency matrix of a cycle of length n#
+def cycle(n): 
+    A=chemin(n) 
+    A[0,n-1]=1 
+    A[n-1,0]=1 
+    return A
+    
+#he adjacency matrix of a random Erdös-Rényi graph of parameters n(integer) and p(probability)#
+def graphealea(n,p): 
+    A=np.zeros([n,n]) 
+    for i in range(0,n): 
+        i =bernoulli.rvs(p) 
+        if i==1: 
+            for j in range(i+1,n): 
+                A[i,j]=1 
+                if A[i,j]==1: 
+                    A[j,i]=1 
+    return A
+A=graphealea(5,0.4)
+
+# for a vertex i returns its neighbors in the adjacency matrix graph A#
+def voisins(A,i): 
+    neighbours = [] 
+    (n,m)=A.shape 
+    for k in range(0,n): 
+        if int(A[i,k]) ==1:
+            neighbours.append(k) 
+    return neighbours
+ 
+#distribution of the degrees of A#
+def distributionDegre(A): 
+    degrees = [] 
+    n = A.shape[0] 
+    tmpDegrees = np.zeros(n) 
+    for k in range(n): 
+        curNeighbours = voisins(A,k) 
+        numNeighbours=len(curNeighbours) 
+        tmpDegrees[numNeighbours] = tmpDegrees[numNeighbours] + 1 
+        for numeral in tmpDegrees: 
+            degrees.append(Fraction(int(numeral),n)) 
+    return degrees
+    
+    
+def distanceToPoisson(n,lambd): 
+    curGrph = graphealea(n, lambd/(n-1)) #generates an Erdös-Rényi graph of parameters n and λ/(n-1)
+    degrees = distributionDegre(curGrph) #degree distribution of this graph
+    
+    #distance of this distribution from the Poisson distribution#
+    suma = 0 
+    for k in range(n): 
+        pXk = np.exp(-lambd)*lambd**k/np.math.factorial(k) 
+        suma = suma + (float(degrees[k]) - pXk )**2 
+    return suma/n
+    
+#Related Components#
+def ccPuissance(A,i): 
+    (n,m)=A.shape #B= np.diag(np.ones(n)) + A #accu = B??? on pense qu’on n’a besoin de passer par la matrice B, on n’est pas sûr de cela 
+    compos=[] 
+    for k in range(0,m):
+        if A[i,k]==1: 
+            compos.append(k+1) 
+    return compos
+    
+    
+def cc_max(A): 
+    (n,m)=A.shape 
+    max=0 
+    ccmax=[] 
+    for i in range(0,n): 
+        c=len(ccPuissance(A,i)) 
+        if c>max: 
+            ccmax=ccPuissance(A,i) 
+    return ccmax
+    
+def cc_max_moyenne(n,lambd,N): 
+    A=graphealea(n, lambd/(n-1)) 
+    if lambd<=1: 
+        taille=math.log(n) 
+        moyenne=taille/N 
+    else: 
+        taille=cc_max(A) 
+        moyenne=len(taille)/N 
+    return moyenne 
+
+X= [] 
+for n in range(2,10): 
+    lambd=n/4 
+    curmoyenne = cc_max_moyenne(n,n/4,100) 
+    X.append(curmoyenne) 
+plt.plot(X)
+plt.show()
+
+# method BFS #
+def ccBFS(A,v): 
+    n = np.shape(A)[0] 
+    visite = np.zeros(n) 
+    queue = [v] 
+    visite[v] = 0 # print(visite) # 
+    while queue != []:
+        curSumit = queue[0] 
+        queue.remove(queue[0]) 
+        visite[curSumit] = 1 
+        for k in range(len(A[curSumit])): 
+            if A[curSumit][k]== 1 and visite[k] ==0: 
+                queue.append(k) 
+    return visite
+
+
+
+def ccBFS_niveau(A, v): 
+    n=np.shape(A)[0] 
+    visite=np.ones(n) 
+    queue=[(v,0)] 
+    curLevel = 1 
+    #print(visite) # 
+    while queue != []: 
+        curSumit = queue[0] 
+        queue.remove(queue[0]) 
+        visite[curSumit[0]] = curSumit[1] 
+        for k in range(len(A[curSumit[0]])): 
+            if A[curSumit[0]][k]== 1 and visite[k] ==-1: 
+                queue.append((k, curSumit[1]+1)) 
+    return visite
+    
+def calc_diametre(A): 
+    diam = -1 
+    for k in range(len(A)): 
+        visite = ccBFS_niveau(A, k) 
+        diam = max(diam, max(visite)) 
+    return diam 
+
+print('beginning calculation.....') 
+allDiam = [] 
+for n in range(10, 401, 10): 
+    #print(n) 
+    curGrph = graphealea(n, 4/n) 
+    curDiam = calc_diametre(curGrph) 
+    allDiam.append(curDiam) 
+plt.plot(allDiam) 
+plt.show()
